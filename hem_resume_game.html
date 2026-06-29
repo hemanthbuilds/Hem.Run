@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HEM.RUN — Meet Hemanth in 90 Seconds</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --green:#00e676;--green2:#69f0ae;--green3:#00c853;
+  --blue:#29b6f6;--blue2:#0288d1;--purple:#7c4dff;
+  --cyan:#00e5ff;--amber:#ffd740;--orange:#ff6d00;
+  --bg:#0a0e1a;--card:#0d1526;--text:#e0f0ff;
+  --circuit:#1a2a4a;--glow:rgba(0,230,118,0.18);
+}
+body{
+  background:var(--bg);
+  min-height:100vh;font-family:'Inter',sans-serif;color:var(--text);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#game-wrapper{
+  display:flex;flex-direction:column;align-items:center;
+  width:100%;max-width:1080px;padding:0 10px;gap:0;
+}
+
+/* HEADER */
+#hdr{display:flex;justify-content:space-between;align-items:center;width:100%;padding:10px 6px 7px;}
+#hdr-title{font-family:'Press Start 2P';font-size:10px;color:var(--green);letter-spacing:2px;text-shadow:0 0 10px var(--green);}
+#hdr-score{font-family:'Press Start 2P';font-size:9px;color:var(--amber);}
+
+/* CANVAS */
+#canvas-wrap{position:relative;width:100%;border:2px solid var(--green);box-shadow:0 0 30px rgba(0,230,118,0.2),0 0 60px rgba(0,230,118,0.08);border-radius:4px 4px 0 0;overflow:hidden;}
+canvas{display:block;width:100%;image-rendering:pixelated;}
+
+/* PROGRESS STRIP */
+#prog-strip{
+  width:100%;background:#0d1526;
+  border-left:2px solid var(--green);border-right:2px solid var(--green);
+  padding:7px 14px;display:flex;align-items:center;gap:12px;
+}
+#prog-bar-bg{flex:1;height:10px;background:#0a1a2e;border-radius:3px;overflow:hidden;border:1px solid #1a3a5a;}
+#prog-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:3px;transition:width 0.5s ease;width:0%;box-shadow:0 0 8px var(--green);}
+#prog-label{font-family:'Press Start 2P';font-size:5.5px;color:var(--green);white-space:nowrap;}
+
+/* FACT CARD */
+#fact-card{
+  width:100%;background:var(--card);
+  border-left:2px solid var(--green);border-right:2px solid var(--green);border-bottom:2px solid var(--green);
+  padding:16px 20px 14px;min-height:90px;
+  opacity:0;transform:translateY(-8px);
+  transition:opacity 0.38s ease,transform 0.38s ease;
+  border-radius:0 0 4px 4px;
+  box-shadow:0 0 20px rgba(0,230,118,0.12);
+}
+#fact-card.show{opacity:1;transform:translateY(0);}
+#fc-inner{display:flex;gap:16px;align-items:flex-start;}
+#fc-emoji{font-size:28px;line-height:1;flex-shrink:0;margin-top:2px;}
+#fc-right{flex:1;}
+#fc-tag{font-family:'Press Start 2P';font-size:5.5px;color:var(--cyan);letter-spacing:1px;margin-bottom:6px;display:inline-block;background:rgba(0,229,255,0.08);padding:3px 7px;border-radius:2px;border:1px solid rgba(0,229,255,0.2);}
+#fc-headline{font-size:14px;font-weight:800;color:#fff;line-height:1.4;margin-bottom:5px;}
+#fc-body{font-size:12px;color:#a0b8d0;line-height:1.7;}
+#fc-motivation{margin-top:10px;padding:8px 12px;background:rgba(255,215,64,0.06);border-left:3px solid var(--amber);font-size:11.5px;color:var(--amber);font-weight:600;line-height:1.6;display:none;border-radius:0 3px 3px 0;}
+
+/* CONTROLS */
+#ctrl-hint{font-family:'Press Start 2P';font-size:5.5px;color:#2a4a6a;letter-spacing:1px;padding:8px 0 3px;}
+
+/* OVERLAYS */
+.overlay{position:absolute;inset:0;background:rgba(10,14,26,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:20;backdrop-filter:blur(3px);}
+.overlay.hidden{display:none;}
+
+#start-title{font-family:'Press Start 2P';font-size:17px;color:var(--green);text-align:center;line-height:1.9;text-shadow:0 0 20px var(--green);}
+#start-sub{font-size:13px;color:#7a9ab8;text-align:center;line-height:1.9;max-width:72%;}
+#start-sub span{font-weight:700;color:var(--cyan);}
+#start-btn{background:transparent;color:var(--green);border:2px solid var(--green);padding:14px 38px;font-family:'Press Start 2P';font-size:9px;cursor:pointer;border-radius:3px;box-shadow:0 0 20px rgba(0,230,118,0.3);transition:all 0.15s;letter-spacing:1px;}
+#start-btn:hover{background:rgba(0,230,118,0.1);box-shadow:0 0 30px rgba(0,230,118,0.5);transform:translateY(-2px);}
+
+#end-overlay{position:absolute;inset:0;background:rgba(10,14,26,0.97);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;z-index:20;overflow-y:auto;padding:18px 22px 22px;}
+#end-overlay.hidden{display:none;}
+#end-win{font-family:'Press Start 2P';font-size:13px;color:var(--amber);text-align:center;line-height:1.9;margin-bottom:4px;text-shadow:0 0 15px var(--amber);}
+#end-bonus{font-family:'Press Start 2P';font-size:8px;color:var(--green);text-align:center;margin-bottom:6px;text-shadow:0 0 10px var(--green);letter-spacing:1px;}
+#end-tagline{font-size:13px;color:#5a7a98;text-align:center;margin-bottom:14px;font-style:italic;}
+#end-profile{width:100%;display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+.ep-card{background:#0d1a2e;border-radius:7px;padding:11px 16px;border-left:3px solid var(--green);box-shadow:0 0 10px rgba(0,230,118,0.08);display:flex;gap:12px;align-items:flex-start;}
+.ep-icon{font-size:20px;flex-shrink:0;margin-top:1px;}
+.ep-tag{font-family:'Press Start 2P';font-size:4.5px;color:var(--cyan);margin-bottom:4px;letter-spacing:1px;}
+.ep-text{font-size:11px;color:#a0b8d0;line-height:1.65;}
+.ep-text strong{color:#fff;font-weight:700;}
+
+#end-cta-area{display:flex;flex-direction:column;align-items:center;gap:9px;margin-top:6px;width:100%;}
+#end-cta-label{font-family:'Press Start 2P';font-size:6.5px;color:#3a5a7a;}
+.cta-row{display:flex;gap:10px;width:100%;max-width:440px;}
+#linkedin-btn{background:var(--green);color:#0a0e1a;border:none;padding:13px 0;font-family:'Press Start 2P';font-size:8px;cursor:pointer;border-radius:3px;flex:1;font-weight:800;transition:all 0.15s;box-shadow:0 0 15px rgba(0,230,118,0.4);}
+#linkedin-btn:hover{box-shadow:0 0 25px rgba(0,230,118,0.6);transform:translateY(-2px);}
+#resume-btn{background:transparent;color:var(--cyan);border:2px solid var(--cyan);padding:13px 0;font-family:'Press Start 2P';font-size:8px;cursor:pointer;border-radius:3px;flex:1;transition:all 0.15s;}
+#resume-btn:hover{background:rgba(0,229,255,0.08);box-shadow:0 0 15px rgba(0,229,255,0.3);}
+#replay-btn{background:transparent;color:#3a5a7a;border:1px solid #1a3a5a;padding:10px 0;font-family:'Press Start 2P';font-size:7px;cursor:pointer;border-radius:3px;width:100%;max-width:440px;transition:all 0.15s;}
+#replay-btn:hover{border-color:var(--green);color:var(--green);}
+
+#cp-flash{position:absolute;inset:0;background:rgba(0,230,118,0.12);opacity:0;pointer-events:none;z-index:15;transition:opacity 0.15s;}
+#cp-flash.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="game-wrapper">
+  <div id="hdr">
+    <div id="hdr-title">HEM.RUN</div>
+    <div id="hdr-score">⭐ <span id="score-val">0</span> pts</div>
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="gameCanvas" width="1060" height="320"></canvas>
+    <div id="cp-flash"></div>
+
+    <div class="overlay" id="start-overlay">
+      <div id="start-title">MEET HEMANTH<br>IN 90 SECS</div>
+      <div id="start-sub">Run through <span>9 checkpoints</span> to unlock the story of an AI engineer who thinks in products.</div>
+      <button id="start-btn">[ &nbsp;BOOT SEQUENCE: START &nbsp;]</button>
+    </div>
+
+    <div class="overlay hidden" id="end-overlay">
+      <div id="end-win">// MISSION COMPLETE 🎉</div>
+      <div id="end-bonus">FINAL SCORE: 67 pts ⭐</div>
+      <div id="end-tagline">"Here's everything you need to know about Hemanth — the full picture."</div>
+      <div id="end-profile"></div>
+      <div id="end-cta-area">
+        <div id="end-cta-label">→ READY TO CONNECT?</div>
+        <div class="cta-row">
+          <button id="linkedin-btn" onclick="window.open('https://www.linkedin.com/in/hemanth-jammigumpala/','_blank')">🔗 &nbsp;LINKEDIN</button>
+          <button id="resume-btn">📄 &nbsp;RESUME</button>
+        </div>
+        <button id="replay-btn">↩ &nbsp;REPLAY</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="prog-strip">
+    <div id="prog-bar-bg"><div id="prog-bar-fill"></div></div>
+    <div id="prog-label">0 / 9 UNLOCKED</div>
+  </div>
+
+  <div id="fact-card">
+    <div id="fc-inner">
+      <div id="fc-emoji">⚡</div>
+      <div id="fc-right">
+        <div id="fc-tag">INITIALIZING...</div>
+        <div id="fc-headline">—</div>
+        <div id="fc-body"></div>
+        <div id="fc-motivation"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ctrl-hint">[ SPACE / CLICK / TAP ] TO JUMP &nbsp;·&nbsp; DOUBLE JUMP ENABLED</div>
+</div>
+
+<script>
+// Resume download
+document.getElementById('resume-btn').addEventListener('click',()=>{
+  const a=document.createElement('a');
+  a.href='https://raw.githubusercontent.com/hemanthbuilds/hem-run/main/Hemanth_Jammigumpala_AIE.pdf';
+  a.target='_blank';a.download='Hemanth_Jammigumpala_Resume.pdf';a.click();
+});
+document.getElementById('replay-btn').addEventListener('click',()=>{
+  document.getElementById('end-overlay').classList.add('hidden');startGame();
+});
+
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height;
+const GY=H-56;
+const PW=28,PH=40;
+
+// ── FACTS ──────────────────────────────────────────────────────────────────
+const FACTS=[
+  {emoji:'🎓',tag:'// ORIGIN_STORY',headline:'UT Dallas — B.S. Computer Information Systems',body:'Built his foundation at UT Dallas, one of Texas\'s top tech schools. Chose Computer Information Systems because it sits exactly at the crossroads of engineering and business — where AI products actually get built and scaled.',motivation:'Great AI engineers understand both the stack and the strategy. That\'s the foundation Hemanth deliberately built from day one.'},
+  {emoji:'🤖',tag:'// AI_ENGINEER.core',headline:'RAG systems, vector search, LLM pipelines — from scratch',body:'Hands-on with LangChain, LangGraph, ChromaDB, Pinecone, and the full RAG stack. Built a Document Q&A system with hybrid BM25 + semantic search, page-level citations to prevent hallucination, and a production Streamlit interface. Not a tutorial — a working system.',motivation:'Most candidates list LangChain. Hemanth shipped a production RAG system with hallucination controls. That\'s the difference.'},
+  {emoji:'🏗',tag:'// SOLUTIONS_ARCHITECT',headline:'Designs multi-agent pipelines — not just prompts',body:'Built a 3-node LangGraph agent that scrapes company news via Apify, synthesizes strategic priorities, and outputs tailored recommendations via Pydantic-enforced JSON schemas. Designed for determinism — parallel fan-out, structured outputs, no hallucination drift.',motivation:'Architecture thinking at the entry level is rare. Hemanth designs for failure modes — the mindset of a solutions architect.'},
+  {emoji:'🎙',tag:'// VOICE_AI.module',headline:'Voice-to-SQL Agent: talk to a database in plain English',body:'End-to-end agent using Sarvam AI for STT/TTS — chosen specifically because Sarvam is built for multilingual and local language transcription, making it far more versatile than English-only models. GPT-4o-mini handles reasoning, MCP orchestrates tools, SQLite stores the data. Speak in your language. It queries. It answers back.',motivation:'Multimodal AI is where the next wave of products is being built. Hemanth is already shipping in that space.'},
+  {emoji:'🏢',tag:'// ENTERPRISE.capstone',headline:'Led AI benchmarking for State Farm — 59% → 88% satisfaction',body:'6-person capstone team. Built a RAG pipeline on Stack AI using Claude Sonnet integrated with an HR knowledge base. Ran 4 rounds of iterative prompt benchmarking. User satisfaction went from 59% to 88%. Hallucination frequency measurably reduced.',motivation:'Working with a Fortune 50 client as a student and moving satisfaction by 29 points — that\'s ownership, not participation.'},
+  {emoji:'📊',tag:'// PRODUCT_THINKING',headline:'Bridges AI and business — BRDs, Tableau, SQL, Agile',body:'Built an end-to-end BI solution for EV Charging Infrastructure in DFW — Alteryx pipelines, Tableau dashboards for investment decisions. Also skilled in BRD/PRD writing, process mapping, stakeholder communication, Jira. Speaks both engineer and stakeholder.',motivation:'The rarest skill in AI isn\'t building models — it\'s explaining them to the business. Hemanth does both fluently.'},
+  {emoji:'🚀',tag:'// GTM_VISION.exe',headline:'AI Engineer → Solutions Architect → AI Product GTM Strategist',body:'The trajectory is deliberate: build deep technical credibility in agentic systems and enterprise AI, then move into AI product management and go-to-market strategy. The goal is to be the PM who actually understands what\'s under the hood — and can sell it.',motivation:'The best AI PMs will come from people who built AI systems. Hemanth is on exactly that path — intentionally.'},
+  {emoji:'✨',tag:'// HUMAN.exe',headline:'A builder who ships, thinks in public, and cares about impact',body:'Based in Richardson, TX. Actively writing about AI on LinkedIn because he genuinely thinks through what it means for products and people — and wants to contribute to that conversation. GitHub: github.com/hemanthbuilds. Open to AI Engineer, Solutions Architect, and AI Product roles.',motivation:'Skills get you the interview. Curiosity and character get you the career. This is someone worth a conversation.'},
+  {emoji:'🤝',tag:'// LETS_CONNECT',headline:'Ready to contribute — day one, full stack, full drive',body:'Hemanth is actively looking for his first role in AI Engineering, Solutions Architecture, or AI-adjacent Business Analysis. He brings a portfolio of shipped projects, enterprise capstone experience, and the rare ability to communicate AI to both engineers and executives. Richardson, TX — open to hybrid or remote across the US.',motivation:'You don\'t find candidates like this at every hiring cycle. If you\'ve made it this far — reach out. You already know enough to make that call.'},
+];
+
+// ── BG ELEMENTS ────────────────────────────────────────────────────────────
+// Data center server racks (scrolling bg)
+const serverRacks=Array.from({length:12},(_,i)=>({x:i*120+Math.random()*40,y:30+Math.random()*40,h:80+Math.random()*50,w:28+Math.random()*16}));
+// Floating chip particles
+const chips=Array.from({length:18},()=>({x:Math.random()*W,y:Math.random()*(GY-60),vx:(Math.random()-0.5)*0.4,vy:(Math.random()-0.5)*0.3,size:3+Math.random()*5,pulse:Math.random()*Math.PI*2}));
+// Circuit lines
+const circuits=Array.from({length:10},()=>({x:Math.random()*W,y:Math.random()*(GY-40),len:40+Math.random()*80,dir:Math.random()>0.5,pulse:Math.random()*Math.PI*2,speed:(Math.random()-0.5)*0.2}));
+// Stars / data particles
+const stars=Array.from({length:60},()=>({x:Math.random()*W,y:Math.random()*(GY-20),r:Math.random()*1.8+0.4,tw:Math.random()*Math.PI*2}));
+
+let state,raf;
+function mkState(){
+  const cpSpacing=800;
+  return {
+    running:false,ended:false,
+    score:0,dist:0,speed:2.2,
+    frame:0,factTimer:0,paused:false,pauseTimer:0,
+    factsUnlocked:0,
+    player:{x:110,y:GY-PH,vy:0,grounded:true,jumps:0,legF:0,legT:0,bounce:0,blinkT:0},
+    obstacles:[],nextObs:360,
+    checkpoints:FACTS.map((_,i)=>({x:460+i*cpSpacing,hit:false,factIdx:i})),
+    totalDist:460+FACTS.length*cpSpacing+500,
+    bgOffset:0,
+  };
+}
+state=mkState();
+
+function jump(){
+  if(!state.running||state.ended||state.paused)return;
+  const p=state.player;
+  if(p.jumps<2){p.vy=-11.5;p.grounded=false;p.jumps++;}
+}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();jump();}});
+canvas.addEventListener('click',jump);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();jump();});
+document.getElementById('start-btn').addEventListener('click',startGame);
+
+function startGame(){
+  document.getElementById('start-overlay').classList.add('hidden');
+  document.getElementById('end-overlay').classList.add('hidden');
+  hideFactCard();state=mkState();state.running=true;
+  if(raf)cancelAnimationFrame(raf);loop();
+}
+
+function spawnObs(){
+  const types=['gpu','chip','server'];
+  const t=types[Math.floor(Math.random()*types.length)];
+  const h=t==='server'?46:t==='chip'?22:32;
+  state.obstacles.push({x:W+30,w:22,h,type:t,cleared:false,bounced:false});
+}
+
+function showFactCard(f,isOnBounce){
+  document.getElementById('fc-emoji').textContent=f.emoji;
+  document.getElementById('fc-tag').textContent=f.tag;
+  document.getElementById('fc-headline').textContent=f.headline;
+  document.getElementById('fc-body').textContent=f.body;
+  const m=document.getElementById('fc-motivation');
+  if(isOnBounce){m.style.display='block';m.textContent='💬 '+f.motivation;}
+  else m.style.display='none';
+  document.getElementById('fact-card').classList.add('show');
+}
+function hideFactCard(){document.getElementById('fact-card').classList.remove('show');}
+function updateProgress(){
+  document.getElementById('prog-bar-fill').style.width=(state.factsUnlocked/FACTS.length*100)+'%';
+  document.getElementById('prog-label').textContent=`${state.factsUnlocked} / ${FACTS.length} UNLOCKED`;
+  document.getElementById('score-val').textContent=state.score;
+}
+function flashCP(){const el=document.getElementById('cp-flash');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),250);}
+
+// ── PIXEL HELPERS ──────────────────────────────────────────────────────────
+function pxR(x,y,w,h,fill,dark,glow){
+  if(glow){ctx.shadowColor=glow;ctx.shadowBlur=8;}
+  ctx.fillStyle=fill;ctx.fillRect(x,y,w,h);
+  ctx.shadowBlur=0;
+  if(dark){ctx.fillStyle=dark;ctx.fillRect(x,y+h-3,w,3);ctx.fillRect(x+w-3,y,3,h);}
+  ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(x,y,w,2);ctx.fillRect(x,y,2,h);
+}
+
+// ── BACKGROUND: Data Center ────────────────────────────────────────────────
+function drawDataCenter(){
+  // deep bg gradient
+  const g=ctx.createLinearGradient(0,0,0,GY);
+  g.addColorStop(0,'#050810');g.addColorStop(0.6,'#080d18');g.addColorStop(1,'#0a1020');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,GY);
+
+  // distant server racks (far layer - slow scroll)
+  const rackOffset=(state.bgOffset*0.15)%160;
+  serverRacks.forEach(rack=>{
+    const rx=((rack.x-rackOffset)%( W+180)+W+180)%( W+180)-180;
+    const ry=rack.y;
+    // rack body
+    ctx.fillStyle='#0d1a2e';
+    ctx.fillRect(rx,ry,rack.w,rack.h);
+    ctx.strokeStyle='#1a3a5a';ctx.lineWidth=1;
+    ctx.strokeRect(rx,ry,rack.w,rack.h);
+    // server units in rack
+    for(let u=0;u<Math.floor(rack.h/12);u++){
+      const uy=ry+u*12+2;
+      ctx.fillStyle=u%3===0?'#0d2a1a':'#0a1828';
+      ctx.fillRect(rx+2,uy,rack.w-4,9);
+      // LED indicators
+      const ledColors=['#00e676','#29b6f6','#00e5ff','#ffd740'];
+      for(let l=0;l<3;l++){
+        const pulse=Math.sin(state.frame*0.05+rack.x*0.1+u*0.7+l)*0.5+0.5;
+        ctx.fillStyle=ledColors[(u+l)%4];
+        ctx.globalAlpha=0.4+pulse*0.6;
+        ctx.fillRect(rx+rack.w-8+l*3,uy+3,2,3);
+      }
+      ctx.globalAlpha=1;
+    }
+    // rack top light bar
+    const barPulse=Math.sin(state.frame*0.03+rack.x*0.05)*0.5+0.5;
+    ctx.fillStyle=`rgba(0,230,118,${0.3+barPulse*0.4})`;
+    ctx.fillRect(rx,ry-2,rack.w,3);
+    ctx.shadowColor='#00e676';ctx.shadowBlur=6;
+    ctx.fillRect(rx,ry-2,rack.w,3);
+    ctx.shadowBlur=0;
+  });
+
+  // floating circuit lines
+  circuits.forEach(c=>{
+    c.pulse+=0.03;c.x+=c.speed;
+    if(c.x>W+100)c.x=-100;if(c.x<-100)c.x=W+100;
+    const alpha=0.15+0.1*Math.sin(c.pulse);
+    ctx.strokeStyle=`rgba(0,229,255,${alpha})`;ctx.lineWidth=1;
+    ctx.beginPath();
+    if(c.dir){ctx.moveTo(c.x,c.y);ctx.lineTo(c.x+c.len,c.y);ctx.moveTo(c.x+c.len,c.y);ctx.lineTo(c.x+c.len,c.y+20);}
+    else{ctx.moveTo(c.x,c.y);ctx.lineTo(c.x,c.y+c.len);ctx.moveTo(c.x,c.y+c.len);ctx.lineTo(c.x+20,c.y+c.len);}
+    ctx.stroke();
+    // node dot
+    ctx.fillStyle=`rgba(0,229,255,${alpha*2})`;
+    ctx.fillRect(c.dir?c.x+c.len-1:c.x-1,c.dir?c.y-1:c.y+c.len-1,3,3);
+  });
+
+  // floating chip particles
+  chips.forEach(ch=>{
+    ch.x+=ch.vx;ch.y+=ch.vy;ch.pulse+=0.04;
+    if(ch.x<0)ch.x=W;if(ch.x>W)ch.x=0;
+    if(ch.y<0)ch.y=GY-60;if(ch.y>GY-60)ch.y=0;
+    const alpha=0.2+0.15*Math.sin(ch.pulse);
+    const s=ch.size;
+    ctx.fillStyle=`rgba(124,77,255,${alpha})`;
+    ctx.fillRect(ch.x,ch.y,s,s);
+    // chip pins
+    ctx.fillStyle=`rgba(0,229,255,${alpha*0.7})`;
+    ctx.fillRect(ch.x-2,ch.y+1,2,Math.floor(s*0.4));
+    ctx.fillRect(ch.x+s,ch.y+1,2,Math.floor(s*0.4));
+  });
+
+  // star data particles
+  stars.forEach(s=>{
+    s.tw+=0.035;
+    const a=0.2+0.25*Math.sin(s.tw);
+    ctx.fillStyle=`rgba(0,229,255,${a})`;
+    ctx.fillRect(Math.floor(s.x),Math.floor(s.y),Math.ceil(s.r),Math.ceil(s.r));
+  });
+}
+
+// ── GROUND: Circuit Board ──────────────────────────────────────────────────
+function drawGround(){
+  // ground base — PCB green-dark
+  ctx.fillStyle='#0a1a0a';ctx.fillRect(0,GY,W,H-GY);
+  // circuit board top layer
+  for(let bx=0;bx<W;bx+=24){
+    const pulse=Math.sin(state.frame*0.04+bx*0.08)*0.5+0.5;
+    const c=Math.floor(bx/24)%4;
+    const colors=['#1a3a1a','#0d2a1a','#162a16','#0a200a'];
+    ctx.fillStyle=colors[c];
+    ctx.fillRect(bx,GY-8,24,10);
+    // trace lines on ground
+    ctx.strokeStyle=`rgba(0,230,118,${0.15+pulse*0.2})`;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(bx,GY-2);ctx.lineTo(bx+24,GY-2);ctx.stroke();
+    // via holes
+    if(Math.floor(bx/24)%5===0){
+      ctx.fillStyle=`rgba(0,230,118,${0.3+pulse*0.4})`;
+      ctx.beginPath();ctx.arc(bx+12,GY-4,2,0,Math.PI*2);ctx.fill();
+    }
+  }
+  // sub-ground
+  for(let bx=0;bx<W;bx+=24){
+    if(Math.floor(bx/24)%3!==0){ctx.fillStyle='#061006';ctx.fillRect(bx+2,GY+6,20,8);}
+  }
+  // ground glow line
+  ctx.shadowColor='#00e676';ctx.shadowBlur=12;
+  ctx.strokeStyle='rgba(0,230,118,0.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,GY-8);ctx.lineTo(W,GY-8);ctx.stroke();
+  ctx.shadowBlur=0;
+}
+
+// ── OBSTACLES: GPU / Chip / Server ────────────────────────────────────────
+function drawObs(o){
+  const sx=o.x-state.dist+state.player.x+90;
+  const x=Math.floor(sx),y=GY-o.h;
+  const pulse=Math.sin(state.frame*0.08+o.x*0.01)*0.5+0.5;
+  if(o.type==='gpu'){
+    // GPU block
+    pxR(x,y,o.w,o.h,'#1a0a2e','#0d0520',null);
+    pxR(x+2,y+2,o.w-4,8,'#2d1060','#1a0a3a',null);
+    // fan circles
+    ctx.strokeStyle=`rgba(124,77,255,${0.4+pulse*0.4})`;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(x+o.w/2,y+o.h/2+2,7,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.arc(x+o.w/2,y+o.h/2+2,3,0,Math.PI*2);ctx.stroke();
+    // glow
+    ctx.shadowColor='#7c4dff';ctx.shadowBlur=10;
+    ctx.fillStyle=`rgba(124,77,255,${0.3+pulse*0.3})`;
+    ctx.fillRect(x+2,y+o.h-4,o.w-4,3);
+    ctx.shadowBlur=0;
+  } else if(o.type==='chip'){
+    // CPU chip
+    pxR(x+2,y+2,o.w-4,o.h-4,'#0d2a0d','#061506',null);
+    pxR(x+5,y+5,o.w-10,o.h-10,'#1a4a1a','#0d2a0d',null);
+    // pins
+    ctx.fillStyle=`rgba(0,230,118,${0.5+pulse*0.3})`;
+    for(let p=0;p<3;p++){ctx.fillRect(x-3,y+4+p*5,3,3);ctx.fillRect(x+o.w,y+4+p*5,3,3);}
+    // die glow
+    ctx.shadowColor='#00e676';ctx.shadowBlur=8;
+    ctx.strokeStyle=`rgba(0,230,118,${0.4+pulse*0.4})`;ctx.lineWidth=1;
+    ctx.strokeRect(x+5,y+5,o.w-10,o.h-10);
+    ctx.shadowBlur=0;
+  } else {
+    // server rack unit
+    pxR(x,y,o.w,o.h,'#0d1a2e','#060d1a',null);
+    for(let r=0;r<3;r++){
+      ctx.fillStyle=r===1?'#0d2a1a':'#0a1828';
+      ctx.fillRect(x+2,y+2+r*13,o.w-4,11);
+      const lc=['#00e676','#29b6f6','#ffd740'][r];
+      ctx.fillStyle=`rgba(${lc.slice(1).match(/../g).map(h=>parseInt(h,16)).join(',')},${0.5+pulse*0.5})`;
+      ctx.fillRect(x+o.w-7,y+5+r*13,3,5);
+    }
+    ctx.shadowColor='#29b6f6';ctx.shadowBlur=6;
+    ctx.strokeStyle=`rgba(41,182,246,0.4)`;ctx.lineWidth=1;
+    ctx.strokeRect(x,y,o.w,o.h);
+    ctx.shadowBlur=0;
+  }
+}
+
+// ── CHECKPOINTS ────────────────────────────────────────────────────────────
+function drawCheckpoints(){
+  state.checkpoints.forEach(cp=>{
+    if(cp.hit)return;
+    const sx=cp.x-state.dist+state.player.x+90;
+    if(sx<-50||sx>W+50)return;
+    const x=Math.floor(sx);
+    const pulse=Math.sin(state.frame*0.06)*0.5+0.5;
+    // holographic pole
+    ctx.strokeStyle=`rgba(0,229,255,${0.4+pulse*0.3})`;ctx.lineWidth=2;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(x+11,GY-75);ctx.lineTo(x+11,GY-8);ctx.stroke();
+    ctx.setLineDash([]);
+    // flag
+    const fc=cp.factIdx%2===0?'#00e5ff':'#00e676';
+    ctx.shadowColor=fc;ctx.shadowBlur=12;
+    pxR(x+13,GY-75,30,18,cp.factIdx%2===0?'#003a4a':'#003a18',null,null);
+    ctx.strokeStyle=fc;ctx.lineWidth=1.5;
+    ctx.strokeRect(x+13,GY-75,30,18);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#fff';ctx.font='bold 8px "Press Start 2P"';ctx.textAlign='center';
+    ctx.shadowColor=fc;ctx.shadowBlur=6;
+    ctx.fillText(cp.factIdx+1,x+28,GY-62);
+    ctx.shadowBlur=0;ctx.textAlign='left';
+    // ground ring pulse
+    ctx.strokeStyle=`rgba(0,229,255,${0.15+pulse*0.2})`;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(x+11,GY-4,18+pulse*6,0,Math.PI*2);ctx.stroke();
+  });
+}
+
+// ── PLAYER: Pixel Boy ──────────────────────────────────────────────────────
+function drawPlayer(p){
+  const x=Math.floor(p.x),y=Math.floor(p.y+p.bounce);
+  const lo=p.grounded?Math.sin(p.legF*0.28)*5:0;
+  p.blinkT=(p.blinkT||0)+1;
+  const blink=p.blinkT%120<8;
+
+  // SHOES
+  pxR(x+3,y+PH-6,11,7,'#111','#000');
+  pxR(x+14,y+PH-6,11,7,'#111','#000');
+  // shoe soles glow
+  ctx.fillStyle='rgba(0,230,118,0.5)';
+  ctx.fillRect(x+3,y+PH-1,11,2);ctx.fillRect(x+14,y+PH-1,11,2);
+
+  // LEGS (jeans style)
+  pxR(x+5,y+PH-18,9,13+lo,'#1a3a6a','#0d2050');
+  pxR(x+14,y+PH-18,9,13-lo,'#1a3a6a','#0d2050');
+
+  // BODY (dark hoodie with circuit pattern)
+  pxR(x+3,y+13,PW-6,PH-26,'#1a1a3a','#0d0d28');
+  // hoodie pocket
+  ctx.fillStyle='#141430';ctx.fillRect(x+8,y+22,12,8);
+  ctx.strokeStyle='rgba(0,229,255,0.3)';ctx.lineWidth=1;ctx.strokeRect(x+8,y+22,12,8);
+  // circuit trace on hoodie
+  ctx.strokeStyle='rgba(0,230,118,0.25)';ctx.lineWidth=1;ctx.setLineDash([2,3]);
+  ctx.beginPath();ctx.moveTo(x+5,y+16);ctx.lineTo(x+14,y+16);ctx.lineTo(x+14,y+20);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ARMS
+  const armSwing=p.grounded?Math.sin(p.legF*0.28)*4:0;
+  pxR(x-2,y+13,6,14+armSwing,'#1a1a3a','#0d0d28');
+  pxR(x+PW-4,y+13,6,14-armSwing,'#1a1a3a','#0d0d28');
+  // hands
+  pxR(x-2,y+25+armSwing,6,6,'#c8956c','#a0724a');
+  pxR(x+PW-4,y+25-armSwing,6,6,'#c8956c','#a0724a');
+
+  // NECK
+  pxR(x+10,y+9,8,6,'#c8956c','#a0724a');
+
+  // HEAD
+  pxR(x+4,y-2,PW-8,16,'#d4a574','#b8835a');
+
+  // HAIR (dark, slightly spiky pixel style)
+  pxR(x+4,y-6,PW-8,8,'#1a0a0a','#0a0505');
+  pxR(x+2,y-4,5,6,'#1a0a0a','#0a0505');
+  pxR(x+PW-7,y-4,5,6,'#1a0a0a','#0a0505');
+  pxR(x+10,y-8,8,5,'#1a0a0a','#0a0505');
+
+  // EYES
+  if(!blink){
+    ctx.fillStyle='#1a0a0a';
+    ctx.fillRect(x+8,y+2,5,5);ctx.fillRect(x+17,y+2,5,5);
+    // eye shine
+    ctx.fillStyle='#fff';
+    ctx.fillRect(x+9,y+3,2,2);ctx.fillRect(x+18,y+3,2,2);
+    // pupils
+    ctx.fillStyle='#3a1a6a';
+    ctx.fillRect(x+10,y+4,2,2);ctx.fillRect(x+19,y+4,2,2);
+  } else {
+    // blink — horizontal line
+    ctx.fillStyle='#1a0a0a';
+    ctx.fillRect(x+8,y+4,5,2);ctx.fillRect(x+17,y+4,5,2);
+  }
+
+  // SMILE
+  ctx.fillStyle='#a0622a';
+  ctx.fillRect(x+9,y+9,2,2);ctx.fillRect(x+19,y+9,2,2);
+  ctx.fillRect(x+11,y+11,8,2);
+
+  // HEADPHONES (tech accessory)
+  ctx.fillStyle='#2a2a4a';
+  ctx.fillRect(x+3,y-2,4,4);ctx.fillRect(x+PW-7,y-2,4,4);
+  ctx.strokeStyle='rgba(0,229,255,0.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(x+PW/2,y-4,PW/2-3,Math.PI,0,false);ctx.stroke();
+  // ear cup glow
+  ctx.fillStyle='rgba(0,229,255,0.4)';
+  ctx.fillRect(x+3,y-1,4,2);ctx.fillRect(x+PW-7,y-1,4,2);
+}
+
+// ── HUD ────────────────────────────────────────────────────────────────────
+function drawHUD(){
+  const dw=13,dgap=6,total=FACTS.length;
+  const sx=W/2-(total*(dw+dgap))/2;
+  FACTS.forEach((_,i)=>{
+    const dx=sx+i*(dw+dgap),dy=10;
+    const lit=i<state.factsUnlocked;
+    ctx.fillStyle=lit?'rgba(0,230,118,0.9)':'rgba(0,230,118,0.1)';
+    ctx.fillRect(dx,dy,dw,6);
+    if(lit){ctx.shadowColor='#00e676';ctx.shadowBlur=6;}
+    ctx.strokeStyle=lit?'rgba(0,230,118,0.7)':'rgba(0,230,118,0.2)';
+    ctx.lineWidth=1;ctx.strokeRect(dx,dy,dw,6);
+    ctx.shadowBlur=0;
+  });
+  const pct=Math.min(Math.floor((state.dist/state.totalDist)*100),100);
+  ctx.fillStyle='rgba(0,229,255,0.5)';ctx.font='5px monospace';ctx.textAlign='right';
+  ctx.fillText(pct+'% complete',W-10,H-8);ctx.textAlign='left';
+}
+
+function drawPauseHint(){
+  ctx.fillStyle='rgba(0,229,255,0.06)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#00e5ff';ctx.shadowColor='#00e5ff';ctx.shadowBlur=15;
+  ctx.font='bold 8px "Press Start 2P"';ctx.textAlign='center';
+  ctx.fillText('CHECKPOINT ✓  KEEP RUNNING →',W/2,H/2+4);
+  ctx.shadowBlur=0;ctx.textAlign='left';
+}
+
+// ── UPDATE ─────────────────────────────────────────────────────────────────
+function update(){
+  if(!state.running||state.ended)return;
+  if(state.paused){state.pauseTimer--;if(state.pauseTimer<=0){state.paused=false;hideFactCard();}return;}
+
+  state.frame++;state.dist+=state.speed;state.bgOffset+=state.speed;
+  state.speed=Math.min(2.2+state.dist/3200,5.0);
+
+  const p=state.player;
+  p.vy+=0.52;p.y+=p.vy;
+  if(p.y>=GY-PH){p.y=GY-PH;p.vy=0;p.grounded=true;p.jumps=0;}
+  else p.grounded=false;
+  if(p.grounded){p.legT++;if(p.legT>2){p.legF++;p.legT=0;}}
+  if(p.bounce<0)p.bounce=Math.min(0,p.bounce+0.6);
+
+  if(state.dist>state.nextObs){
+    spawnObs();
+    const gap=Math.max(340-state.speed*18,160);
+    state.nextObs=state.dist+gap+Math.random()*120;
+  }
+
+  state.obstacles=state.obstacles.filter(o=>{
+    const sx=o.x-state.dist+p.x+90;
+    if(!o.bounced){
+      const px2=p.x+6,py2=p.y+6,pw2=PW-12,ph2=PH-8;
+      const ox=sx+4,oy=GY-o.h+3,ow=o.w-8,oh=o.h-3;
+      if(px2<ox+ow&&px2+pw2>ox&&py2<oy+oh&&py2+ph2>oy){
+        p.vy=-5.5;p.bounce=-5;
+        state.score=Math.max(0,state.score);
+        document.getElementById('score-val').textContent=state.score;
+        const fi=state.factsUnlocked;
+        if(fi<FACTS.length){showFactCard(FACTS[fi],true);state.factTimer=330;}
+        o.bounced=true;
+      }
+    }
+    if(!o.cleared&&sx<p.x-14){o.cleared=true;}
+    return sx>-120;
+  });
+
+  if(state.factTimer>0){state.factTimer--;if(state.factTimer===0&&!state.paused)hideFactCard();}
+
+  state.checkpoints.forEach(cp=>{
+    if(cp.hit)return;
+    const sx=cp.x-state.dist+p.x+90;
+    if(sx<p.x+PW+16&&sx>p.x-16){
+      cp.hit=true;state.factsUnlocked++;
+      updateProgress();flashCP();
+      showFactCard(FACTS[cp.factIdx],false);
+      state.paused=true;state.pauseTimer=430;
+    }
+  });
+
+  if(state.dist>=state.totalDist){state.running=false;state.ended=true;state.score=67;document.getElementById('score-val').textContent=state.score;setTimeout(showEndScreen,700);}
+}
+
+function showEndScreen(){
+  hideFactCard();
+  const ep=document.getElementById('end-profile');ep.innerHTML='';
+  FACTS.forEach(f=>{
+    const c=document.createElement('div');c.className='ep-card';
+    c.innerHTML=`<div class="ep-icon">${f.emoji}</div><div><div class="ep-tag">${f.tag}</div><div class="ep-text"><strong>${f.headline}</strong><br>${f.body}</div></div>`;
+    ep.appendChild(c);
+  });
+  document.getElementById('end-overlay').classList.remove('hidden');
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawDataCenter();drawGround();
+  drawCheckpoints();
+  state.obstacles.forEach(drawObs);
+  drawPlayer(state.player);
+  drawHUD();
+  if(state.paused)drawPauseHint();
+}
+function loop(){update();draw();raf=requestAnimationFrame(loop);}
+draw();
+</script>
+</body>
+</html>
